@@ -1,0 +1,45 @@
+<?php
+
+
+function customtookens_civicrm_tokens( &$tokens ) {
+    $tokens['membership'] = array( 'membership.betrag', 'membership.mandatsreferenz' );
+}
+
+
+
+function customtookens_civicrm_tokenValues( &$details, &$contactIDs ) {
+    #CRM_Core_Error::debug('variable_name', $contactIDs);
+    if ( is_array( $contactIDs ) ) {
+        $contactIDString = implode( ',', array_values( $contactIDs ) );
+        $single = false;
+    } else {
+        $contactIDString = "( $contactIDs )";
+        $single = true;
+    }
+
+    $query = "
+        SELECT contact_id,
+                betrag_37,
+                mandatsreferenz_43
+        FROM civicrm_membership, civicrm_value_zahlungen_9
+        WHERE civicrm_membership.id = civicrm_value_zahlungen_9.entity_id
+        AND civicrm_membership.contact_id IN ( $contactIDString ) ";
+
+    $dao = CRM_Core_DAO::executeQuery( $query );
+    while ( $dao->fetch( ) ) {
+        if ( $single ) {
+            $value =& $details;
+        } else {
+            if ( ! array_key_exists( $dao->contact_id, $details ) ) {
+                $details[$dao->contact_id] = array( );
+            }
+
+            $value =& $details[$dao->contact_id];
+        }
+
+        $value['membership.betrag'] = $dao->betrag_37;
+        $value['membership.mandatsreferenz'] = $dao->mandatsreferenz_43;
+
+    }
+}
+
